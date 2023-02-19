@@ -130,13 +130,8 @@ func (srv *server) AddRoutes(app *fiber.App) *fiber.App {
 	_ = authMiddleWare
 
 	//TODO: protected companies route
-	// companiesRoute := app.Group("companies", authMiddleWare)
-	companiesRoute := app.Group("companies")
-	companiesRoute.Get("/:id", srv.companyHandler.Get)
-	companiesRoute.Post("/", srv.companyHandler.Create)
-	companiesRoute.Patch("/:id", srv.companyHandler.Patch)
-	companiesRoute.Delete("/:id", srv.companyHandler.Delete)
-
+	// srv.companyHandler.AddRoutes(app,authMiddleWare)
+	srv.companyHandler.AddRoutes(app)
 	return app
 }
 

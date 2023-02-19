@@ -4,7 +4,7 @@ PORT=8081
 build:
 	go build -race -o bin/ ./...
 test:
-	go test ./...
+	go test -coverprofile=coverage.out ./...
 docker: extern/wait-for-it/wait-for-it.sh
 	docker build -t companies-micro .
 test-create-company: data/test/company.create.json
@@ -15,3 +15,5 @@ extern/wait-for-it/wait-for-it.sh:
 	git submodule update --init --recursive
 login:
 	@curl -XPOST -s -H "Content-Type: application/x-www-form-urlencoded"  -d 'user=john&password=doe'  '${HOST}:${PORT}/login' | jq .token
+genmock:
+	docker run --rm -v "${PWD}":/src -w /src vektra/mockery --inpackage --keeptree --all

@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/itzurabhi/companies-micro/internal/models"
 	"github.com/itzurabhi/companies-micro/internal/repositories"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -22,9 +24,16 @@ func CreateCompaniesRepo(conn *gorm.DB) repositories.Companies {
 func (repo pgcompanies) Create(ctx context.Context, data models.Company) (models.Company, error) {
 	tx := repo.conn.WithContext(ctx).Model(&models.Company{}).Create(&data)
 	if tx.Error != nil {
+
+		var pgErr *pgconn.PgError
+
+		// error with a mapped database code
+		if errors.As(tx.Error, &pgErr) {
+			return data, pgErr
+		}
+
 		return data, tx.Error
 	}
-
 	return data, nil
 }
 

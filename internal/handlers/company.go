@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/itzurabhi/companies-micro/internal/logic"
 	"github.com/itzurabhi/companies-micro/internal/models"
 
 	"github.com/go-playground/validator/v10"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var validate *validator.Validate
@@ -39,7 +41,7 @@ type CompanyHandler struct {
 
 type CompanyRequest struct {
 	Name              string `validate:"required,min=1,max=15"`
-	Description       string `validate:"required,max=3000"`
+	Description       string `validate:"max=3000"`
 	AmountOfEmployees int    `validate:"required"`
 	Registered        *bool  `validate:"required"`
 	Type              string `validate:"validateCompanyTypeEnum"`
@@ -51,24 +53,33 @@ func CreateCompanyHandler(companyLogic *logic.CompanyLogic) *CompanyHandler {
 	}
 }
 
+func (handler *CompanyHandler) AddRoutes(app *fiber.App, middleWares ...fiber.Handler) {
+	companiesRoute := app.Group("companies", middleWares...)
+	companiesRoute.Get("/:id", handler.Get)
+	companiesRoute.Post("/", handler.Create)
+	companiesRoute.Patch("/:id", handler.Patch)
+	companiesRoute.Delete("/:id", handler.Delete)
+}
+
 func (handler *CompanyHandler) Create(c *fiber.Ctx) error {
 
 	req := new(CompanyRequest)
 
 	if err := c.BodyParser(req); err != nil {
-		log.Error("Company:Create", "could not decode body", err)
+		logrus.Error("Company:Create", "could not decode body", err)
 		return writeError(c, err)
 	}
 
 	if err := validate.Struct(req); err != nil {
-		resp := createInvalidBodyError(err.Error())
+		errs := err.(validator.ValidationErrors)
+		resp := createInvalidBodyError(errs[0].Error())
 		return writeError(c, resp)
 	}
 
 	cType, ok := models.CompanyTypeNameMap[req.Type]
 
 	if !ok {
-		log.Error("Company:Create", "company type mapping error, from :", req.Type)
+		logrus.Error("Company:Create", "company type mapping error, from :", req.Type)
 		resp := createInternalError("could not create company")
 		return writeError(c, resp)
 	}
@@ -87,7 +98,7 @@ func (handler *CompanyHandler) Create(c *fiber.Ctx) error {
 		return writeError(c, err)
 	}
 
-	return writeSuccessJSON(c, &created)
+	return writeSuccessJSON(c, &created, http.StatusCreated)
 }
 
 func (handler *CompanyHandler) Get(c *fiber.Ctx) error {
@@ -107,7 +118,7 @@ func (handler *CompanyHandler) Patch(c *fiber.Ctx) error {
 	req := new(CompanyRequest)
 
 	if err := c.BodyParser(req); err != nil {
-		log.Error("Company:Create", "could not decode body", err)
+		logrus.Error("Company:Create", "could not decode body", err)
 		return writeError(c, err)
 	}
 
@@ -119,7 +130,7 @@ func (handler *CompanyHandler) Patch(c *fiber.Ctx) error {
 	cType, ok := models.CompanyTypeNameMap[req.Type]
 
 	if !ok {
-		log.Error("Company:Create", "company type mapping error, from :", req.Type)
+		logrus.Error("Company:Create", "company type mapping error, from :", req.Type)
 		resp := createInternalError("could not create company")
 		return writeError(c, resp)
 	}
@@ -144,5 +155,8 @@ func (handler *CompanyHandler) Patch(c *fiber.Ctx) error {
 
 func (handler *CompanyHandler) Delete(c *fiber.Ctx) error {
 	id := c.Params("id")
-	return handler.companyLogic.Delete(c.Context(), id)
+	if err := handler.companyLogic.Delete(c.Context(), id); err != nil {
+		logrus.Error("Company:Delete", "failed for ", id, err)
+	}
+	return c.Status(http.StatusAccepted).SendString("")
 }

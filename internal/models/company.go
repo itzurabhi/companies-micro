@@ -26,7 +26,7 @@ var CompanyTypeNameMap = map[string]CompanyType{
 // • Type (Corporations | NonProfit | Cooperative | Sole Proprietorship) required
 type Company struct {
 	ID                string      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Name              string      `gorm:"unique;not null"`
+	Name              string      `gorm:"unique;not null;size:15"`
 	Description       string      `gorm:"not null"`
 	AmountOfEmployees int         `gorm:"not null"`
 	Registered        bool        `gorm:"not null"`
