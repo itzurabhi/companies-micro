@@ -6,6 +6,8 @@ require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/gofiber/fiber/v2 v2.42.0
+	github.com/gofiber/jwt/v3 v3.3.6
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/sirupsen/logrus v1.9.0
 	gorm.io/driver/postgres v1.4.8
 	gorm.io/gorm v1.24.5

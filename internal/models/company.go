@@ -25,10 +25,10 @@ var CompanyTypeNameMap = map[string]CompanyType{
 // • Registered (boolean) required
 // • Type (Corporations | NonProfit | Cooperative | Sole Proprietorship) required
 type Company struct {
-	ID                string `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Name              string `gorm:"unique"`
-	Description       string
-	AmountOfEmployees int
-	Registered        bool
-	Type              CompanyType
+	ID                string      `gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	Name              string      `gorm:"unique;not null"`
+	Description       string      `gorm:"not null"`
+	AmountOfEmployees int         `gorm:"not null"`
+	Registered        bool        `gorm:"not null"`
+	Type              CompanyType `gorm:"not null"`
 }

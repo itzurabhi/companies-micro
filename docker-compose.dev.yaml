@@ -16,29 +16,31 @@ services:
       - 9000:8080
   companies:
     image: companies-micro
+    build: .
     environment:
       POSTGRES_DSN: "host=db user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=${POSTGRES_PORT} sslmode=disable TimeZone=${TIMEZONE}"
+      POSTGRES_HOST: db
+      POSTGRES_PORT: ${POSTGRES_PORT}
       HOST: ${APP_HOST}
       PORT: ${APP_PORT}
+      JWT_KEY: ${JWT_KEY}
       KAFKA_CLIENT_BOOTSTRAP_SERVERS: "${KAFKA_BROKER_HOSTNAME}:${KAFKA_BROKER_LISTEN_PORT}"
       KAFKA_CLIENT_ID: ${KAFKA_CLIENT_ID}
     depends_on:
       - broker
       - db
     ports:
-      - 8081
+      - 8081:8081
 
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
-    container_name: zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
   broker:
     image: confluentinc/cp-kafka:7.3.0
-    container_name: broker
     ports:
       - "9092"
     depends_on:

@@ -8,6 +8,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gofiber/fiber/v2"
+	jwtware "github.com/gofiber/jwt/v3"
 	"github.com/itzurabhi/companies-micro/internal/handlers"
 	"github.com/itzurabhi/companies-micro/internal/logic"
 	"github.com/itzurabhi/companies-micro/internal/repositories"
@@ -108,11 +109,6 @@ func (srv *server) createFiberHandlers() *server {
 }
 
 func (srv *server) cleanupResources() {
-	if srv.pgdb != nil {
-		logrus.Println("closing postgres connection")
-		conn, err := srv.pgdb.DB()
-
-	}
 }
 
 func (srv *server) AddRoutes(app *fiber.App) *fiber.App {
@@ -124,10 +120,18 @@ func (srv *server) AddRoutes(app *fiber.App) *fiber.App {
 		})
 	})
 
-	// companies route
+	// login for tokens
+	app.Post("/login", handlers.CreateAuthHandler(utils.EnvOrDefault("JWT_KEY", "")).Login)
 
+	authMiddleWare := jwtware.New(jwtware.Config{
+		SigningKey: []byte("secret"),
+	})
+
+	_ = authMiddleWare
+
+	//TODO: protected companies route
+	// companiesRoute := app.Group("companies", authMiddleWare)
 	companiesRoute := app.Group("companies")
-
 	companiesRoute.Get("/:id", srv.companyHandler.Get)
 	companiesRoute.Post("/", srv.companyHandler.Create)
 	companiesRoute.Patch("/:id", srv.companyHandler.Patch)
