@@ -5,6 +5,8 @@ build:
 	go build -race -o bin/ ./...
 test:
 	go test -coverprofile=coverage.out ./...
+coverage: coverage.out
+	go tool cover -html=coverage.out
 docker: extern/wait-for-it/wait-for-it.sh
 	docker build -t companies-micro .
 test-create-company: data/test/company.create.json
