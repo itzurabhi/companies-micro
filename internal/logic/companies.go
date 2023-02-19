@@ -27,7 +27,7 @@ func (cl *CompanyLogic) Create(ctx context.Context, data models.Company) (models
 		return data, err
 	}
 
-	if err := cl.companyEvents.PostEvent(models.CompanyEvent{
+	if err := cl.companyEvents.PostEvent(ctx, models.CompanyEvent{
 		Type: models.CompanyCreatedEvent,
 		Uuid: data.ID,
 	}); err != nil {
@@ -45,7 +45,7 @@ func (cl *CompanyLogic) Patch(ctx context.Context, id string, data models.Compan
 		return data, err
 	}
 
-	if err := cl.companyEvents.PostEvent(models.CompanyEvent{
+	if err := cl.companyEvents.PostEvent(ctx, models.CompanyEvent{
 		Type: models.CompanyPatchedEvent,
 		Uuid: data.ID,
 	}); err != nil {
@@ -64,7 +64,7 @@ func (cl *CompanyLogic) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	if err := cl.companyEvents.PostEvent(models.CompanyEvent{
+	if err := cl.companyEvents.PostEvent(ctx, models.CompanyEvent{
 		Type: models.CompanyDeletedEvent,
 		Uuid: id,
 	}); err != nil {

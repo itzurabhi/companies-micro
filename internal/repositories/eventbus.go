@@ -1,5 +1,7 @@
 package repositories
 
+import "context"
+
 type EventBus interface {
-	PostEvent(items ...interface{}) error
+	PostEvent(ctx context.Context, items ...interface{}) error
 }

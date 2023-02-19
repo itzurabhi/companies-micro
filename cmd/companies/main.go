@@ -7,19 +7,21 @@ import (
 	"os/signal"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	"github.com/itzurabhi/companies-micro/internal/handlers"
 	"github.com/itzurabhi/companies-micro/internal/logic"
 	"github.com/itzurabhi/companies-micro/internal/repositories"
-	"github.com/itzurabhi/companies-micro/internal/repositories/inmemory"
+	kafkaRepos "github.com/itzurabhi/companies-micro/internal/repositories/kafka"
 	pgRepos "github.com/itzurabhi/companies-micro/internal/repositories/postgres"
 	"github.com/itzurabhi/companies-micro/internal/utils"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	postgresInternals "github.com/itzurabhi/companies-micro/internal/database/postgres"
 )
 
-var ListenPort = utils.EnvOrDefault("PORT", "8080")
+var ListenPort = utils.EnvOrDefault("PORT", "8081")
 var ListenHost = utils.EnvOrDefault("HOST", "0.0.0.0")
 
 type server struct {
@@ -39,12 +41,23 @@ type server struct {
 }
 
 func (srv *server) createPostgresConn() *server {
-	dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := utils.EnvOrDefault("POSTGRES_DSN", "")
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		logrus.Fatal("creating postgres connection failed", err)
 	}
 	srv.pgdb = db
+	return srv
+}
+
+func (srv *server) migratePostgres() *server {
+	if srv.pgdb == nil {
+		logrus.Fatal("database connection must be created before migrations")
+	}
+
+	if err := postgresInternals.Migrate(srv.pgdb); err != nil {
+		log.Fatal(err)
+	}
 	return srv
 }
 
@@ -54,7 +67,7 @@ func (srv *server) createKafkaConnn() *server {
 		"client.id":         utils.EnvOrDefault("KAFKA_CLIENT_ID", ""),
 		"acks":              "all"})
 	if err != nil {
-		logrus.Fatal("creating postgres connection failed", err)
+		logrus.Fatal("creating kafka connection failed", err)
 	}
 	srv.kafkaProducer = prod
 	return srv
@@ -72,7 +85,7 @@ func (srv *server) createKafkaRepos() *server {
 	if srv.kafkaProducer == nil {
 		logrus.Fatal("kafka connection must be created before repositories")
 	}
-	srv.companyEvents = inmemory.CreateInMemoryEventBus()
+	srv.companyEvents = kafkaRepos.CreateCompaniesEventBus(srv.kafkaProducer, "CompanyEvents")
 	return srv
 }
 
@@ -94,11 +107,19 @@ func (srv *server) createFiberHandlers() *server {
 	return srv
 }
 
+func (srv *server) cleanupResources() {
+	if srv.pgdb != nil {
+		logrus.Println("closing postgres connection")
+		conn, err := srv.pgdb.DB()
+
+	}
+}
+
 func (srv *server) AddRoutes(app *fiber.App) *fiber.App {
 
 	// health check
-	app.Get("/health", func(c *fiber.Ctx) {
-		c.Status(http.StatusOK).JSON(map[string]string{
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(http.StatusOK).JSON(map[string]string{
 			"status": "ok",
 		})
 	})
@@ -122,6 +143,8 @@ func main() {
 	server.createPostgresConn()
 	server.createKafkaConnn()
 
+	server.migratePostgres()
+
 	server.createPostgresRepos()
 	server.createKafkaRepos()
 
@@ -132,8 +155,7 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt)
 
-	app := fiber.New(&fiber.Settings{
-		Prefork:      true,
+	app := fiber.New(fiber.Config{
 		ServerHeader: "Companies Serverice",
 	})
 

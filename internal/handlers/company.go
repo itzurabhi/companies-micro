@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	"github.com/itzurabhi/companies-micro/internal/logic"
 	"github.com/itzurabhi/companies-micro/internal/models"
 
@@ -39,9 +39,9 @@ type CompanyHandler struct {
 
 type CompanyRequest struct {
 	Name              string `validate:"required,min=1,max=15"`
-	Description       string `validate:"max=3000"`
+	Description       string `validate:"required,max=3000"`
 	AmountOfEmployees int    `validate:"required"`
-	Registered        bool   `validate:"required"`
+	Registered        *bool  `validate:"required"`
 	Type              string `validate:"validateCompanyTypeEnum"`
 }
 
@@ -51,18 +51,18 @@ func CreateCompanyHandler(companyLogic *logic.CompanyLogic) *CompanyHandler {
 	}
 }
 
-func (handler *CompanyHandler) Create(c *fiber.Ctx) {
+func (handler *CompanyHandler) Create(c *fiber.Ctx) error {
 
 	req := new(CompanyRequest)
 
 	if err := c.BodyParser(req); err != nil {
 		log.Error("Company:Create", "could not decode body", err)
-		_ = writeError(c, err)
+		return writeError(c, err)
 	}
 
 	if err := validate.Struct(req); err != nil {
 		resp := createInvalidBodyError(err.Error())
-		_ = writeError(c, resp)
+		return writeError(c, resp)
 	}
 
 	cType, ok := models.CompanyTypeNameMap[req.Type]
@@ -70,36 +70,79 @@ func (handler *CompanyHandler) Create(c *fiber.Ctx) {
 	if !ok {
 		log.Error("Company:Create", "company type mapping error, from :", req.Type)
 		resp := createInternalError("could not create company")
-		_ = writeError(c, resp)
+		return writeError(c, resp)
 	}
 
 	data := models.Company{
-		Name:        req.Name,
-		Description: req.Description,
-		Registered:  req.Registered,
-		Type:        cType,
+		Name:              req.Name,
+		Description:       req.Description,
+		Registered:        *req.Registered,
+		AmountOfEmployees: req.AmountOfEmployees,
+		Type:              cType,
 	}
 
 	created, err := handler.companyLogic.Create(c.Context(), data)
 
 	if err != nil {
-		_ = writeError(c, err)
+		return writeError(c, err)
 	}
 
-	_ = writeSuccessJSON(c, &created)
+	return writeSuccessJSON(c, &created)
 }
 
-func (handler *CompanyHandler) Get(c *fiber.Ctx) {
-	_ = c.Params("id")
-	panic("not implemented")
+func (handler *CompanyHandler) Get(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	data, err := handler.companyLogic.Get(c.Context(), id)
+
+	if err != nil {
+		return writeError(c, err)
+	}
+
+	return writeSuccessJSON(c, &data)
 }
 
-func (handler *CompanyHandler) Patch(c *fiber.Ctx) {
-	_ = c.Params("id")
-	panic("not implemented")
+func (handler *CompanyHandler) Patch(c *fiber.Ctx) error {
+	id := c.Params("id")
+	req := new(CompanyRequest)
+
+	if err := c.BodyParser(req); err != nil {
+		log.Error("Company:Create", "could not decode body", err)
+		return writeError(c, err)
+	}
+
+	if err := validate.Struct(req); err != nil {
+		resp := createInvalidBodyError(err.Error())
+		return writeError(c, resp)
+	}
+
+	cType, ok := models.CompanyTypeNameMap[req.Type]
+
+	if !ok {
+		log.Error("Company:Create", "company type mapping error, from :", req.Type)
+		resp := createInternalError("could not create company")
+		return writeError(c, resp)
+	}
+
+	data := models.Company{
+		ID:                id,
+		Name:              req.Name,
+		Description:       req.Description,
+		Registered:        *req.Registered,
+		AmountOfEmployees: req.AmountOfEmployees,
+		Type:              cType,
+	}
+
+	created, err := handler.companyLogic.Patch(c.Context(), id, data)
+
+	if err != nil {
+		return writeError(c, err)
+	}
+
+	return writeSuccessJSON(c, &created)
 }
 
-func (handler *CompanyHandler) Delete(c *fiber.Ctx) {
-	_ = c.Params("id")
-	panic("not implemented")
+func (handler *CompanyHandler) Delete(c *fiber.Ctx) error {
+	id := c.Params("id")
+	return handler.companyLogic.Delete(c.Context(), id)
 }

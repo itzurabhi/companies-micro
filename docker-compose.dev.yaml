@@ -5,22 +5,30 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_USER: companies
-      POSTGRES_DB: companies
-      POSTGRES_PASSWORD: companies
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
 
   adminer:
     image: adminer
     restart: always
     ports:
-      - 8080:8080
-  # companies:
-  #   image: companies-micro
-  #   environment:
-  #     HOST: 0.0.0.0
-  #     PORT: 8080
-  #     KAFKA_CLIENT_BOOTSTRAP_SERVERS: "broker:9092"
-  #     KAFKA_CLIENT_ID: companies.micro.service
+      - 9000:8080
+  companies:
+    image: companies-micro
+    environment:
+      POSTGRES_DSN: "host=db user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} port=${POSTGRES_PORT} sslmode=disable TimeZone=${TIMEZONE}"
+      HOST: ${APP_HOST}
+      PORT: ${APP_PORT}
+      KAFKA_CLIENT_BOOTSTRAP_SERVERS: "${KAFKA_BROKER_HOSTNAME}:${KAFKA_BROKER_LISTEN_PORT}"
+      KAFKA_CLIENT_ID: ${KAFKA_CLIENT_ID}
+    depends_on:
+      - broker
+      - db
+    ports:
+      - 8081
+
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.0
     container_name: zookeeper
@@ -31,13 +39,13 @@ services:
   broker:
     image: confluentinc/cp-kafka:7.3.0
     container_name: broker
-    # ports:
-    #   - "9092"
+    ports:
+      - "9092"
     depends_on:
       - zookeeper
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: '${ZOOKEEPER_HOSTNAME}:${ZOOKEEPER_PORT}'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://broker:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1

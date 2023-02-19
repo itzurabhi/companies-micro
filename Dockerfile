@@ -8,11 +8,9 @@ RUN go mod download
 
 RUN go build -tags musl -o /bin/ ./cmd/companies
 
-from alpine:latest
+from alpine:edge
 
 COPY --from=builder /bin/companies /companies
-
-USER nonroot:nonroot
 
 ENTRYPOINT ["/companies"]
 

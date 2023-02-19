@@ -1,0 +1,7 @@
+{
+    "Description" : "Sample",
+    "Name" : "ABCD",
+    "Type" :  "Cooperative",
+    "AmountOfEmployees" : 10,
+    "Registered" : false
+}
