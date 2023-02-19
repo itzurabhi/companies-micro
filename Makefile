@@ -1,0 +1,6 @@
+build:
+	go build -race -o bin/ ./...
+test:
+	go test ./...
+docker:
+	docker build -t companies-micro .
