@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func writeError(c *fiber.Ctx, err error) error {
+func writeError(c *fiber.Ctx, err error, statusCode ...int) error {
 	{
 		var httpErr httpResponseMessage
 		if errors.As(err, &httpErr) {
@@ -37,12 +37,19 @@ func writeError(c *fiber.Ctx, err error) error {
 
 		}
 	}
+
+	code := http.StatusInternalServerError
+
+	if len(statusCode) > 0 {
+		code = statusCode[0]
+	}
+
 	return c.Status(http.StatusInternalServerError).JSON(
 		&struct {
 			Status  int
 			Message string
 		}{
-			http.StatusInternalServerError,
+			code,
 			err.Error(),
 		})
 

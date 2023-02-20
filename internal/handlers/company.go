@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/itzurabhi/companies-micro/internal/logic"
 	"github.com/itzurabhi/companies-micro/internal/models"
+	"github.com/itzurabhi/companies-micro/internal/repositories"
 
 	"github.com/go-playground/validator/v10"
 
@@ -95,6 +97,11 @@ func (handler *CompanyHandler) Create(c *fiber.Ctx) error {
 	created, err := handler.companyLogic.Create(c.Context(), data)
 
 	if err != nil {
+
+		if errors.Is(err, repositories.ErrorRecordAlreadyExist) {
+			return writeError(c, err, http.StatusBadRequest)
+		}
+
 		return writeError(c, err)
 	}
 

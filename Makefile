@@ -19,3 +19,5 @@ login:
 	@curl -XPOST -s -H "Content-Type: application/x-www-form-urlencoded"  -d 'user=john&password=doe'  '${HOST}:${PORT}/login' | jq .token
 genmock:
 	docker run --rm -v "${PWD}":/src -w /src vektra/mockery --inpackage --keeptree --all
+lint:
+	golint ./...

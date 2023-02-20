@@ -22,8 +22,8 @@ import (
 	postgresInternals "github.com/itzurabhi/companies-micro/internal/database/postgres"
 )
 
-var ListenPort = utils.EnvOrDefault("PORT", "8081")
-var ListenHost = utils.EnvOrDefault("HOST", "0.0.0.0")
+var listenPort = utils.EnvOrDefault("PORT", "8081")
+var listenHost = utils.EnvOrDefault("HOST", "0.0.0.0")
 
 type server struct {
 	// conections
@@ -171,7 +171,7 @@ func main() {
 
 	}()
 
-	hostPort := ListenHost + ":" + ListenPort
+	hostPort := listenHost + ":" + listenPort
 	logrus.Info("listening on :", hostPort)
 	if err := app.Listen(hostPort); err != nil {
 		logrus.Fatal(err)
