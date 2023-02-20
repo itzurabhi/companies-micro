@@ -8,7 +8,6 @@ RUN go mod download
 
 COPY . .
 
-
 RUN go build -tags musl -o /bin/ ./cmd/companies
 
 RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /bin/wait-for-it.sh && chmod +x /bin/wait-for-it.sh
